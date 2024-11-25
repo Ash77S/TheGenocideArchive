@@ -3,7 +3,7 @@ import './App.css';
 import { SocialMediaEmbed } from 'react-social-media-embed';
 
 const App = () => {
-  const API_URL = '/api/records'; // Backend endpoint for fetching records
+  const API_URL = '/api/records';
 
   const [timelineData, setTimelineData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,8 +20,11 @@ const App = () => {
         throw new Error(`Error fetching records: ${response.status}`);
       }
       const data = await response.json();
-      setTimelineData((prev) => [...prev, ...data.records]);
-      setOffset(data.offset || null); // Update offset for pagination
+
+      console.log('Fetched Records:', data); // Debug log for fetched data
+
+      setTimelineData((prev) => [...prev, ...(data.records || [])]);
+      setOffset(data.offset || null);
     } catch (err) {
       console.error('Error fetching records:', err.message);
       setError('Failed to fetch records.');
@@ -30,7 +33,6 @@ const App = () => {
     }
   }, [API_URL, offset]);
 
-  // Fetch records on component mount
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
@@ -38,26 +40,66 @@ const App = () => {
   return (
     <div className="App">
       <h1>Genocide Archive Timeline</h1>
-      <div className="timeline">
-        {timelineData.length > 0 ? (
-          timelineData.map((record, index) => (
-            <div key={index} className="timeline-item">
-              <div className="date">
-                {record.fields.date ? `Date: ${record.fields.date}` : 'Date: Not provided'}
-              </div>
-              <h3>{record.fields.description || 'No description available.'}</h3>
-              {record.fields.source_1 && (
-                <SocialMediaEmbed url={record.fields.source_1} width={500} height={300} />
-              )}
-            </div>
-          ))
-        ) : (
-          <p>No data available.</p>
-        )}
-      </div>
       {loading && <p>Loading...</p>}
       {error && <p className="error">{error}</p>}
-      {offset && (
+
+      <div className="timeline">
+        {timelineData.length > 0 ? (
+          timelineData.map((record, index) => {
+            const fields = record.fields || {};
+            const {
+              latitude,
+              longitude,
+              description,
+              date,
+              tags,
+              geolocation_resolution,
+              sensitive,
+              source_1,
+              source_2,
+              source_3,
+              source_4,
+              source_5,
+              Incident_Type,
+              Reported_Near,
+              Impact,
+            } = fields;
+
+            return (
+              <div key={index} className="timeline-item">
+                <div className="date">{date ? `Date: ${date}` : 'Date: Not provided'}</div>
+                <h3>{description || 'No description available.'}</h3>
+                {latitude && longitude && (
+                  <p>
+                    Location: {latitude}, {longitude} ({geolocation_resolution || 'Unknown resolution'})
+                  </p>
+                )}
+                {tags && tags.length > 0 && <p>Tags: {tags.join(', ')}</p>}
+                <p>Sensitive: {sensitive || 'Not specified'}</p>
+                {Incident_Type && Incident_Type.length > 0 && (
+                  <p>Incident Type: {Incident_Type.join(', ')}</p>
+                )}
+                {Reported_Near && <p>Reported Near: {Reported_Near}</p>}
+                {Impact && Impact.length > 0 && <p>Impact: {Impact.join(', ')}</p>}
+                <div className="sources">
+                  {[source_1, source_2, source_3, source_4, source_5].map(
+                    (source, idx) =>
+                      source && (
+                        <div key={idx}>
+                          <SocialMediaEmbed url={source} width={500} height={300} />
+                        </div>
+                      )
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          !loading && <p>No data available.</p>
+        )}
+      </div>
+
+      {offset && !loading && (
         <button className="load-more" onClick={fetchRecords}>
           Load More
         </button>

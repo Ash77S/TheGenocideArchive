@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtered Timeline View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .timeline {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .timeline-item {
+            border-left: 2px solid #6c63ff;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+        .timeline-item h3 {
+            margin: 0;
+            color: #6c63ff;
+        }
+        .timeline-item p {
+            margin: 5px 0;
+            color: #333;
+        }
+        .timeline-item .date {
+            font-size: 0.9em;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filtered Timeline View</h1>
+    <div class="timeline" id="timeline"></div>
+
+    <script>
+        // Fetch data from Airtable
+        fetch('https://api.airtable.com/v0/appkpyLd4TzlG0MJf/tblijFR7QOqP28IzT', {
+            headers: {
+                Authorization: 'Bearer pat5b0ieYGAdRQDps.36b19bce15bd804b98c683c2b398b4727b157bb4346015a41226f77b74fd6d1e'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Airtable API Response:', data); // Log the API response for debugging
+            if (!data.records || data.records.length === 0) {
+                document.getElementById('timeline').innerHTML = '<p>No data available.</p>';
+                return;
+            }
+
+            const sortedRecords = sortRecordsByDate(data.records);
+            displayTimeline(sortedRecords);
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            document.getElementById('timeline').innerHTML = `<p>Error fetching data: ${error.message}</p>`;
+        });
+
+        // Function to sort records by the 'date' field
+        function sortRecordsByDate(records) {
+            return records.sort((a, b) => {
+                const dateA = new Date(a.fields.date);
+                const dateB = new Date(b.fields.date);
+                return dateA - dateB; // Ascending order
+            });
+        }
+
+        // Function to display the timeline
+        function displayTimeline(records) {
+            const timeline = document.getElementById('timeline');
+            records.forEach(record => {
+                const fields = record.fields;
+
+                // Skip records without required fields
+                if (!fields.date || !fields.description) {
+                    console.warn('Skipping record due to missing fields:', record);
+                    return;
+                }
+
+                // Create a timeline item
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+
+                // Add date
+                const date = document.createElement('div');
+                date.className = 'date';
+                date.innerText = `Date: ${fields.date}`;
+                timelineItem.appendChild(date);
+
+                // Add title (Incident Type)
+                const title = document.createElement('h3');
+                title.innerText = fields['Incident Type'] || 'No Incident Type';
+                timelineItem.appendChild(title);
+
+                // Add description
+                const description = document.createElement('p');
+                description.innerText = fields.description || 'No description available.';
+                timelineItem.appendChild(description);
+
+                // Add tags if available
+                if (fields.tags) {
+                    const tags = document.createElement('p');
+                    tags.innerText = `Tags: ${fields.tags}`;
+                    timelineItem.appendChild(tags);
+                }
+
+                // Append the item to the timeline
+                timeline.appendChild(timelineItem);
+            });
+        }
+    </script>
+</body>
+</html>

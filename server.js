@@ -1,10 +1,15 @@
-require('dotenv').config(); // Load environment variables
+import 'dotenv/config'; // Load environment variables
+import express from 'express';
+import fetch from 'node-fetch';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const express = require('express');
-const fetch = require('node-fetch');
-const path = require('path');
+// Set up __dirname for ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Environment variables for sensitive data
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;

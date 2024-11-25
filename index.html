@@ -1,81 +1,100 @@
-<script>
-    const API_URL = '/api/records'; // Backend endpoint for fetching records
-    const timeline = document.getElementById('timeline');
-    const loading = document.getElementById('loading');
-    const error = document.getElementById('error');
-    const loadMoreButton = document.getElementById('loadMore');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genocide Archive Timeline</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Link to an optional CSS file -->
+</head>
+<body>
+    <div id="app">
+        <h1>Genocide Archive Timeline</h1>
+        <div id="timeline"></div>
+        <div id="loading" style="display: none;">Loading...</div>
+        <div id="error"></div>
+        <button id="loadMore" style="display: none;">Load More</button>
+    </div>
 
-    let offset = null; // Tracks pagination offset
+    <script>
+        const API_URL = '/api/records'; // Backend endpoint for fetching records
+        const timeline = document.getElementById('timeline');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const loadMoreButton = document.getElementById('loadMore');
 
-    async function fetchRecords() {
-        try {
-            const response = await fetch(`${API_URL}${offset ? `?offset=${offset}` : ''}`);
-            if (!response.ok) {
-                throw new Error(`Error fetching records: ${response.status}`);
+        let offset = null; // Tracks pagination offset
+
+        async function fetchRecords() {
+            try {
+                const response = await fetch(`${API_URL}${offset ? `?offset=${offset}` : ''}`);
+                if (!response.ok) {
+                    throw new Error(`Error fetching records: ${response.status}`);
+                }
+                const data = await response.json();
+                offset = data.offset || null; // Update offset for pagination
+                return data.records;
+            } catch (err) {
+                console.error(err);
+                error.textContent = 'Failed to fetch records.';
+                throw err;
             }
-            const data = await response.json();
-            offset = data.offset || null; // Update offset for pagination
-            return data.records;
-        } catch (err) {
-            console.error(err);
-            error.textContent = 'Failed to fetch records.';
-            throw err;
         }
-    }
 
-    async function renderTimeline(records) {
-        records.forEach((record) => {
-            const fields = record.fields;
+        async function renderTimeline(records) {
+            records.forEach((record) => {
+                const fields = record.fields;
 
-            const timelineItem = document.createElement('div');
-            timelineItem.className = 'timeline-item';
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
 
-            const dateText = fields.date ? `Date: ${fields.date}` : 'Date: Not provided';
-            const descriptionText = fields.description || 'No description available.';
+                const dateText = fields.date ? `Date: ${fields.date}` : 'Date: Not provided';
+                const descriptionText = fields.description || 'No description available.';
 
-            const date = document.createElement('div');
-            date.className = 'date';
-            date.innerText = dateText;
+                const date = document.createElement('div');
+                date.className = 'date';
+                date.innerText = dateText;
 
-            const description = document.createElement('h3');
-            description.innerText = descriptionText;
+                const description = document.createElement('h3');
+                description.innerText = descriptionText;
 
-            timelineItem.appendChild(date);
-            timelineItem.appendChild(description);
+                timelineItem.appendChild(date);
+                timelineItem.appendChild(description);
 
-            if (fields.source_1) {
-                const link = document.createElement('a');
-                link.href = fields.source_1;
-                link.target = '_blank';
-                link.innerText = 'View Source';
-                timelineItem.appendChild(link);
-            }
+                if (fields.source_1) {
+                    const link = document.createElement('a');
+                    link.href = fields.source_1;
+                    link.target = '_blank';
+                    link.innerText = 'View Source';
+                    timelineItem.appendChild(link);
+                }
 
-            timeline.appendChild(timelineItem);
-        });
-    }
-
-    async function loadData() {
-        loading.style.display = 'block';
-        error.textContent = '';
-
-        try {
-            const records = await fetchRecords();
-            if (records && records.length) {
-                await renderTimeline(records);
-                loadMoreButton.style.display = offset ? 'block' : 'none';
-            } else {
-                timeline.innerHTML = '<p>No data available.</p>';
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            loading.style.display = 'none';
+                timeline.appendChild(timelineItem);
+            });
         }
-    }
 
-    loadMoreButton.addEventListener('click', loadData);
+        async function loadData() {
+            loading.style.display = 'block';
+            error.textContent = '';
 
-    // Initial load
-    loadData();
-</script>
+            try {
+                const records = await fetchRecords();
+                if (records && records.length) {
+                    await renderTimeline(records);
+                    loadMoreButton.style.display = offset ? 'block' : 'none';
+                } else {
+                    timeline.innerHTML = '<p>No data available.</p>';
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        loadMoreButton.addEventListener('click', loadData);
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html>

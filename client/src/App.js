@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { SocialMediaEmbed } from 'react-social-media-embed';
 
@@ -11,7 +11,7 @@ const App = () => {
   const [offset, setOffset] = useState(null);
 
   // Fetch data from the backend
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -23,17 +23,17 @@ const App = () => {
       setTimelineData((prev) => [...prev, ...data.records]);
       setOffset(data.offset || null); // Update offset for pagination
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching records:', err.message);
       setError('Failed to fetch records.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, offset]);
 
   // Fetch records on component mount
   useEffect(() => {
     fetchRecords();
-  }, []);
+  }, [fetchRecords]);
 
   return (
     <div className="App">

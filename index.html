@@ -1,57 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtered Timeline View</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+<script>
+    const API_URL = '/api/records'; // Backend endpoint for fetching records
+    const timeline = document.getElementById('timeline');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const loadMoreButton = document.getElementById('loadMore');
+
+    let offset = null; // Tracks pagination offset
+
+    async function fetchRecords() {
+        try {
+            const response = await fetch(`${API_URL}${offset ? `?offset=${offset}` : ''}`);
+            if (!response.ok) {
+                throw new Error(`Error fetching records: ${response.status}`);
+            }
+            const data = await response.json();
+            offset = data.offset || null; // Update offset for pagination
+            return data.records;
+        } catch (err) {
+            console.error(err);
+            error.textContent = 'Failed to fetch records.';
+            throw err;
         }
-        .timeline {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
+    }
+
+    async function renderTimeline(records) {
+        records.forEach((record) => {
+            const fields = record.fields;
+
+            const timelineItem = document.createElement('div');
+            timelineItem.className = 'timeline-item';
+
+            const dateText = fields.date ? `Date: ${fields.date}` : 'Date: Not provided';
+            const descriptionText = fields.description || 'No description available.';
+
+            const date = document.createElement('div');
+            date.className = 'date';
+            date.innerText = dateText;
+
+            const description = document.createElement('h3');
+            description.innerText = descriptionText;
+
+            timelineItem.appendChild(date);
+            timelineItem.appendChild(description);
+
+            if (fields.source_1) {
+                const link = document.createElement('a');
+                link.href = fields.source_1;
+                link.target = '_blank';
+                link.innerText = 'View Source';
+                timelineItem.appendChild(link);
+            }
+
+            timeline.appendChild(timelineItem);
+        });
+    }
+
+    async function loadData() {
+        loading.style.display = 'block';
+        error.textContent = '';
+
+        try {
+            const records = await fetchRecords();
+            if (records && records.length) {
+                await renderTimeline(records);
+                loadMoreButton.style.display = offset ? 'block' : 'none';
+            } else {
+                timeline.innerHTML = '<p>No data available.</p>';
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            loading.style.display = 'none';
         }
-        .timeline-item {
-            border-left: 2px solid #6c63ff;
-            padding-left: 10px;
-            margin-bottom: 20px;
-        }
-        .timeline-item h3 {
-            margin: 0;
-            color: #6c63ff; /* Highlight description */
-        }
-        .timeline-item p {
-            margin: 5px 0;
-            color: #333;
-        }
-        .timeline-item .date {
-            font-size: 0.9em;
-            color: #888;
-        }
-        .telegram-preview,
-        .generic-preview {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-        }
-        .telegram-preview a,
-        .generic-preview a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .telegram-preview a:hover,
-        .generic-preview a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <h1>Filtered Timeline View</h1>
-    <div id="timeline"></div>
-    <script type="module" src="main.js"></script>
-</body>
-</html>
+    }
+
+    loadMoreButton.addEventListener('click', loadData);
+
+    // Initial load
+    loadData();
+</script>
